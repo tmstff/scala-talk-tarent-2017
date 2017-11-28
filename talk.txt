@@ -11,11 +11,11 @@
 | Declaration
 
 ```
-case class User (name: String, orders: List[Order] = Nil)
+case class Product (id: Int, category: String)
 
 case class Order (id: Int, products: List[Product] = Nil)
 
-case class Product (id: Int, category: String)
+case class User (name: String, orders: List[Order] = Nil)
 ```
 
 --
@@ -73,42 +73,34 @@ println( Seq(0, 1).map(Foo(0)(_).hashCode) )
 ---
 | \b\* PATTERN MATCHING
 
-Das pattern matching ist eines der mächtigsten Werkzeuge für Verzweigungslogik in Scala
-und stammt aus der Werzeugkiste der funktionalen Programmierung.
-Was man aus Java oder C als simples switch/case kennt, ist in Scala weit umfangreicher.
-
-| Simple match
-Diese Methode erhält als ersten Parameter einen `String` x.
-Mit dem Operator `match` hinter einer Variable erzeugen wir nun einen neuen Matchingblock.
-Im folgenden Ausdruck werden dann die einzelnen Matchingausdrücke startend mit einem `case`
-erzeugt.
-Trifft ein Ausdruck auf den zu überprüfenden Wert zu, so wird der gesamte Matchingausdruck
-zu dem Wert hinter dem `=>` ausgewertet.
-Ein Fall Through findet hierbei nicht statt. Es gewinnt immer nur ein Match. Geprüft wird
-von oben nach unten.
-
 ```
 def describe(x: String) = x match {
-//.     Matchingausdruck
+//.     matching expression
 //.     |
-//.     |         Ergebnis, wenn der Match zutrifft
+//.     |         result, in case it's a match
 //.     |         |
   case "Hallo" => "some hello"
   case "Hallo Welt" => "some hello world"
 }
 ```
+--
 
-describe("Hallo Welt")    //Gibt "some hello world" zurück
-describe("Hallo")         //Gibt "some hello" zurück
-describe("Foo")           //Wirft eine `MatchError` Exception.
+```
+describe("Hallo Welt")
+```
+--
+
+```
+describe("Hallo")
+```
+--
+
+```
+describe("Foo")
+```
 ---
-| \*\b Constant pattern und default value mit dem wildcard pattern
+| \*\b PATTERN MATCHING constant pattern + wildcard pattern
 
-Diese Methode bekommt einen Wert vom Typ `Any`. Das ist die Oberklasse aller Werte in Scala.
-Wie im oberen Beispiel matchen wir auch hier auf konstante Werte. Scala erlaubt uns
-jeden beliebigen Wert als Kriterium zu nehmen.
-Sollte kein Kriterium auf den übergebenen Wert passen, so bedienen wir uns hier dem
-Wildcardzeichen `_` was auf alle Werte passt und uns so einen Defaultwert ermöglicht.
 
 ```
 def describe2(x: Any) = x match {
@@ -116,80 +108,62 @@ def describe2(x: Any) = x match {
   case true | false => "boolean"
   case "hello" => "hi!"
   case Nil => "empty List"
-  case _   => "something else"  //<--- Wildcard pattern mit einem default value
+  case _   => "something else"  //<--- wildcard pattern with default value
+}
+```
+--
+
+```
+describe2(10)
+```
+--
+
+```
+describe2(true)
+```
+--
+
+```
+describe2(Unit)
+```
+
+
+---
+| PATTERN MATCHING constructor pattern
+
+
+```
+case class Driver(name: String, age: Integer, sex: String)
+
+case class Car(brand: String, driver: Driver)
+
+val car1 = Car("Ferrari", Driver("Michael", 65, "male"))
+val car2 = Car("Ford", Driver("Michael", 65, "male"))
+val car3 = Car("BMW", Driver("Michaela", 23, "female"))
+val car4 = Car("VW", Driver("Tim", 17, "male"))
+
+def insurance(car: Car) = car match {
+  case Car(_, Driver(name, age, _)) if age < 18 => throw new RuntimeException(s"$name is too young to drive!")
+  case Car("Ferrari", Driver(_, age, "male"))   => 1500 * (100 - age) / 100
+  case Car(_, Driver(_, age, "male"))           => 1200 * (100 - age) / 100
+  case car                                      => 1000 * (100 - car.driver.age) / 100
 }
 
-describe2(10)     //ten
-describe2(true)   //boolean
-describe2(Unit)   //Something else
 ```
 
 ---
-| \*\b Variable pattern
+| \b\* PATTERN MATCHING lists
 
-Statt des `_` Zeichens können wir auch einen beliebigen Variablennamen nehmen.
-Dadurch wird der uns unbekannte Wert in diese Variable geschrieben und kann
-im folgenden Ausdruck verwendet werden.
 
 ```
-42 match {
-  case 0 => println("zero")
-  case someVar => println(someVar)
-}
-```
-
----
-| Constructor pattern mit case classes
-
-Case classes haben neben ihren vordefinierten Methoden noch einen sehr praktischen Vorteil.
-Sie können direkt in einem Machtingausdruck als Pattern benutzt werden.
-Zunächst definieren wir uns eine `User` Klasse und eine kleine Hierachie für das Geschlecht.
-
-```
-abstract class Gender
-object Male extends Gender
-object Female extends Gender
-
-case class User(name: String, surname: String, age: Int, gender: Gender)
-```
-
-Max und Martina stehen uns für ein Beispiel zur Verfügung.
-```
-val max = User("Max", "Mustermann", 34, Male)
-val martina = User("Martina", "Musterfrau", 16, Female)
-```
-
-Mittels des Constructor Patterns können wir Instanzen von case classes direkt auf den
-Ausdruck ihrer Erzeugung matchen. Dadurch lassen sich vielfältige Möglichkeiten für
-Fallunterscheidungen bewerkstelligen. Der Nachteil des Constructor Patterns ist, wenn sich der Konstruktor ändert,
-zum Beispiel ein neuer Parameter dazu kommt, müssen auch sämtliche Pattern matchings angepasst werden.
-Hier ein paar Beispiele:
-
-```
-def users(user: User) = user match {
-  case User(name, "Mustermann", _, Male) => println(s"some male with surname Mustermann named: $name")
-  case User(name, _, _, Female) => println(s"some female named: $name")
-  case User(name, _, 34, Male) => println(s"some male that is 34 named: $name")
+def concat(l: List[String]): String = l match {
+  case Nil => ""
+  case elem :: tail => elem + concat(tail)
 }
 
-users(max)
-users(martina)
+concat(List("A", "B", "C"))
 ```
 
----
-| \b\* Variable binding
-
-Nutzt man ein constructor pattern und will nicht nur auf die einzelnen
-Elemente zugreifen, sondern mit dem gesamten Objekt arbeiten, so
-bietet sich das variable binding an.
-
-Zunächst eine Beispielklasse:
-
-```
-case class Car(colour: String, brand: String, km: Double) {
-  def startEngine() = println("WROOOMM")
-}
-```
 
 --
 
