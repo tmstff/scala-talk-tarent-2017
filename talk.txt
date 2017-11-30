@@ -165,35 +165,18 @@ concat(List("A", "B", "C"))
 ```
 
 
---
-
-Möchten wir nun auf einen BMW matchen und zusätzlich im Nachhinein
-diesen Wagen auch mit `startEngine` starten, so können wir das ganze
-Objekt mit einer Variable belegen: `varName @ [Pattern]`:
-
-```
-Car("blue", "BMW", 30000) match {
-  case c @ Car(_, "BMW", _) => println(c.startEngine())
-}
-```
-
 ---
-| \b\* Pattern guards & Tuple Patterns
-
-Möchte man ein pattern noch etwas verfeinern, so kann man, kombiniert
-mit dem variable binding, diesem ein pattern guard beigeben.
-Dabei habdelt es sich einfach um ein if, welches direkt nach dem Pattern,
-also noch vor dem `=>` geschrieben wird:
+| \b\* PATTERN MATCHING tuples
 
 ```
-Car("blue", "BMW", 30000) match {
-  case Car(_, "Audi", km) if km < 20000 => println("Adult male")
-  case Car(_, "BMW", _) => println("childish male")
-}
+val tuple = ("a", 'b', 4711)
+
+val first = tuple._1
+val first = tuple._2
+val first = tuple._3
 ```
+
 --
-
-Tuples können ähnlich wie case classes über ein Konstruktor pattern gematched werden:
 
 ```
 (1, 2, 3) match {
@@ -202,95 +185,9 @@ Tuples können ähnlich wie case classes über ein Konstruktor pattern gematched
   case (1, _, _) => println("1, _, _")
 }
 ```
----
-| \b\* Typed patterns
-
-Typed patterns ermöglichen es, anhand des Datentyps zu filtern.
-`typeMatcher` arbeitet mit einem Value vom Typ `Any`. Im Matchingblock überprüfen wir nun den
-eigentlichen Typ des Values. Die Syntax ist hier wie bei einer Variablendeklaration. Also
-`name`: `type`. Alternativ kann als `name` auch das Wildcardzeichen benutzt werden, wenn uns nur der
-Typ interessiert:
-
-```
-def typeMatcher(x: Any) = x match {
-  case theString: String => println("A String with value: " + theString)
-  case theInt: Int => println("An Integer with value: " + theInt)
-  case _: Boolean => println("A Boolean value")
-  case _ => println("Something other")
-}
-typeMatcher("Hallo")
-typeMatcher(43)
-typeMatcher(true)
-typeMatcher(34.5)
-```
-
 
 ---
-| \b\* Typed patterns & Type erasures
-
-WARNUNG: Type erasures!!! Oder: Ein kleiner Exkurs in die tiefen Tiefen der JVM.
-Auf der JVM sind Generic Informationen lediglich zur Compilezeit bekannt.
-Zur Laufzeit sind diese Informationen nicht mehr vorhanden. Eine List[Int]
-ist dort äquivalent zu List[String].
-Beim Pattern Matching ist man schnell versucht ein Typpattern mit Generics
-zu versuchen. Wie im folgenden Beispiel eine Map, deren Values Integers sind,
-deren Keytyp uns aber egal ist:
-
-```
-def isIntCollection(x: Any) = x match {
-  case m: Map[_, Int] => true
-  case a: Array[Int] => true
-  case _ => false
-}
-```
-
---
-
-Durch das type erasure wird nun folgender Ausdruck zu true ausgewertet,
-obwohl wir definitiv eine Map[String, String] als Parameter geben.
-Das Problem des type erasures tritt auch in Java auf. Siehe:
-   http://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html
-
-```
-isIntCollection(Map("x" -> "y"))
-```
-
---
-
-Aaaaaaber. Was passiert, wenn wir ein `Array("hallo")`, also ein Array[String]
-übergeben? Seltsamerweise erhalten wir hier ein `false` von der Methode.
-
-Arrays stammen noch aus einer Zeit der JVM als es noch keine Generics gab. Sie sind
-daher ein Spezielfall, da sie die einzige Collectionstruktur sind, die direkt von der JVM
-unterstützt werden und nicht erst programmatisch erzeugt werden müssen.
-Arrays sind auch die einzige Collection, die zur Laufzeit ihren Typ
-behält. Ein Java `int[]` ist eben ein eigener Typ und äquivalent zu dem Scala Array[Int].
-s. auch: http://code.stephenmorley.org/articles/java-generics-type-erasure/
-
-```
-isIntCollection(Array("hallo"))
-```
-
-
----
-| \b\* Patterns everywhere
-
-Das Konstruktorpattern kann auch direkt bei einer Variablendekleration benutzt werden.
-Hier extrahieren wir die Farbe des Autos mit einem Konstruktorpattern
-und speichern den Wert in der Variable `color`, welche wir im Anschluss direkt
-benutzen können.
-```
-val car = Car("red", "Jaguar", 20000)
-val Car(colour, _, _) = car
-println(colour)
-```
-
-Das Autobeispiel wäre vermutlich mit einem `car.colour` schneller und nachhaltiger
-gewesen. Tatsächlich ist diese Variablendeklaration auch eher für ein einfach und
-übersicherlicheres extrahieren von Tupledaten geeignet:
-Das geht meist einfacher von der Hand als ein
-  val t = getTuple()
-  println(t._1)
+| \b\* PATTERN MATCHING patterns everywhere
 
 ```
 def getTuple(): (String, Int) = ("hallo", 123)
@@ -300,153 +197,70 @@ println(string)
 println(number)
 ```
 
-
----
-| \b\* Abstract classes
-
-a simple abstract class with an abstract method.
-```
-abstract class AbstractCar {
-  ///We can define abstract methods definitions like in java:
-  def startEngine: String
-
-  ///But we can also define abstract FIELD definitions:
-  val color: String
-
-  ///And of course predefine some fields:
-  val tireCount: Int = 4
-}
-```
-
 --
 
-Now we can extend a concrete sub class. This class must implement the startEngine method and
-color field with a value. Otherwise the code won't compile. :
-
 ```
-class Bmw extends AbstractCar {
-
-  def startEngine: String = "WWRRRRÖÖÖÖÖAAAAAAAAMMMMMMMMMMMM!!!"
-
-  val color = "blue"  //This is a field "implementation"
-}
+def getDriver() = Driver("Michael", 65, "male")
+val Driver(name, age, _) = getDriver()
+println(s"$name, $age")
 ```
 
 ---
-| \b\* Abstract classes overriding
+| \b\* IMMUTABILITY - why?
 
-We extends an abstract fueled car with a new constructor argument
+| less side effects!
+
+consider
+
 ```
-abstract class FueledCar(fillingLevel: Int) extends AbstractCar {
-  //We set the color implementation as final.
-  //So no inherited class can override it. Like in Java.
-  final val color: String = "blue"
-}
+val d = Driver("Michael", 65, "male")
+val result = someObj.doSomethingWith(d)
 ```
 
---
-
-We can override the tireCount method. But in scala me MUST add the prefix `override`.
-We also must give the inherited class it's constructor argument.
-Btw: This PiaggioApe is final. It can not be inherited!
-```
-final class PiaggioApe extends FueledCar(40) {
-  //Implements the startEngine METHOD as a VALUE!
-  //This is possible. But you can not implement a val
-  //definition with a method, cause the scala compiler
-  //checks if the implementation is a strict immutable value
-  //So: def -> var
-  //.   def -> val
-  //.    var -> val
-  //.    var -> def
-  val startEngine: String = "Töf töf töf töf töf töf töf..."
-
-  //Here we override the pre defined value.
-  override val tireCount = 3
-
-  //We can not override the color cause it's final.
-  //override def color = "green"
-}
-```
+| no shared state
+=> easier parallelization
+- no need for mutexes, locks etc
+- no deadlocks
 
 ---
-| \b\* Traits 1
+| \b\* IMMUTABILITY - how to deal with state & side-effects
 
-Trais are like interfaces, which can also have fields and a default implementation.
-The following is a simple trait with two 'abstract' fields which must be 'implemented' with a value.
-Also a default implementation of a method `sayHello`
-```
-trait Person {
-  val name: String
-  val gender: String
-  def sayHello() = println(s"Hello! I'm $name!")
-}
-```
+| what to do with my state then?
+
+- keep it in datastores accessible by all instances (e.g. postgres, redis)
 
 --
 
-We can "mix in" the trait with 'extends' (for the first) or 'with' (for the following) traits.
-```
-class Student(val name: String, val gender: String) extends Person
+| and side-effects (e.g. ui, db-access etc)
 
-val student = new Student("max", "male")
-student.sayHello()
-```
+- keep them in the "Interface Adapters" Layer for Controllers, Gateways & Presenters,
+  see https://8thlight.com/blog/uncle-bob/2012/08/13/the-clean-architecture.html
+
+--
+
+| but I need state for my code
+
+- try to solve things with recursion & functional style programming
+  - tail-recursive functions are converted to a loop internally
+
+- there are situations where it is necessary - or at least much easier - to have state
+  - scala gives you the choice
 
 ---
-| \b\* Traits 2
+| \b\* IMMUTABILITY in scala
 
-We can define another trait which we want to mix in into our subclass.
-This trait represents a user of a cafeteria. It has a budget, can buy food and
-deposit money onto the budget.
-This trait has only default implemented methods. So is probably could also stand alone
-as a class. But we want to mix this one into other classes.
 ```
-trait CafeteriaUser {
-  private var budget: Int = 0
-
-  def actualBudget = budget
-
-  def buyFood(costs: Int) = if(budget - costs < 0) {
-    throw new RuntimeException("You can not buy food! Not enough money!")
-  } else {
-    budget = budget - costs
-  }
-
-  def deposit(value: Int) = budget = budget + value
-}
-```
-
---
-
-So we define a class `Employee` which is a `Person` and also a `CafeteriaUser`:
-To do this, we extend the Person class and mix in the `CafertiaUser` with the keyword `with`.
-```
-class Employee(val name: String, val gender: String) extends Person with CafeteriaUser {
-  val beginOfEmployment = new java.util.Date
-}
+val x = 1
+var y = 1
 ```
 
 --
 
 ```
-val employee = new Employee("Susan", "female")
-employee.sayHello()
-employee.deposit(100)
-employee.actualBudget
-
-var user: CafeteriaUser = employee
-
-new Student(name="Arnold", gender="male") with CafeteriaUser
+y = 2
 ```
+--
 
----
-| \b\* Übungen (für's nächste mal)
-
-https://github.com/tmstff/scala-dojo-yann - section4
-
----
-| \b\* Feedback
-
-Feedback: für zukünftige Workshops: andere Reihenfolge besser? Zuerst der "cool Stuff",
-und dann erst die Details?
+```
+x = 2
+```
