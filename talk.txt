@@ -172,8 +172,8 @@ concat(List("A", "B", "C"))
 val tuple = ("a", 'b', 4711)
 
 val first = tuple._1
-val first = tuple._2
-val first = tuple._3
+val second = tuple._2
+val third = tuple._3
 ```
 
 --
@@ -247,7 +247,7 @@ val result = someObj.doSomethingWith(d)
   - scala gives you the choice
 
 ---
-| \b\* IMMUTABILITY in scala
+| \b\* IMMUTABILITY vals and vars
 
 ```
 val x = 1
@@ -263,4 +263,51 @@ y = 2
 
 ```
 x = 2
+```
+
+--
+
+For case classes "val" is the default!
+
+---
+| \b\* IMMUTABILITY lists
+
+
+```
+val immutableList = List(1,2,3)
+import scala.collection.mutable
+val mutableList = mutable.MutableList(1)
+```
+
+--
+
+```
+mutableList += 1
+```
+
+--
+
+```
+mutableList ++= immutableList
+```
+
+--
+
+```
+immutableList += 1
+```
+
+--
+
+```
+immutableList.add(1)
+```
+
+--
+
+```
+val il2 = 1 :: immutableList
+val il3 = il2 ++ List(6)
+val il4 = immutableList ++ mutableList
+val il5 = immutableList
 ```
